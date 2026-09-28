@@ -164,27 +164,41 @@ class AttendanceController extends Controller
     public function history(Request $request)
     {
         $employee = $request->user()->employee;
+        $filters = $request->validate([
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'type' => ['nullable', 'in:arrival,departure'],
+        ]);
 
-        $records = $employee
-            ? $employee->attendanceRecords()
-                ->where('status', 'accepted')
-                ->latest('recorded_at')
-                ->paginate(30)
-            : collect();
+        $records = $employee ? $this->filteredHistory($employee, $filters) : collect();
 
         return view('attendance.history', compact('records', 'employee'));
     }
 
     /** Historique consultable par l'administration pour un employé donné. */
-    public function employeeHistory(Employee $employee)
+    public function employeeHistory(Request $request, Employee $employee)
     {
-        $records = $employee->attendanceRecords()
-            ->where('status', 'accepted')
-            ->with('site')
-            ->latest('recorded_at')
-            ->paginate(30);
+        $filters = $request->validate([
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'type' => ['nullable', 'in:arrival,departure'],
+        ]);
+        $records = $this->filteredHistory($employee, $filters);
 
         return view('attendance.history', compact('records', 'employee'));
+    }
+
+    private function filteredHistory(Employee $employee, array $filters)
+    {
+        return $employee->attendanceRecords()
+            ->where('status', 'accepted')
+            ->with('site')
+            ->when($filters['date_from'] ?? null, fn ($query, $date) => $query->whereDate('recorded_at', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('recorded_at', '<=', $date))
+            ->when($filters['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
+            ->latest('recorded_at')
+            ->paginate(30)
+            ->withQueryString();
     }
 
     /**

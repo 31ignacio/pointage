@@ -16,6 +16,15 @@
     @endif
 </div>
 
+<form method="GET" action="{{ $employee && auth()->user()->isAdmin() ? route('employees.history', $employee) : route('attendance.history') }}" class="card p-3 mb-3">
+    <div class="row g-3 align-items-end">
+        <div class="col-12 col-sm-6 col-lg-3"><label class="form-label" for="date_from">Du</label><input class="form-control" type="date" id="date_from" name="date_from" value="{{ request('date_from') }}"></div>
+        <div class="col-12 col-sm-6 col-lg-3"><label class="form-label" for="date_to">Au</label><input class="form-control" type="date" id="date_to" name="date_to" value="{{ request('date_to') }}"></div>
+        <div class="col-12 col-sm-6 col-lg-3"><label class="form-label" for="type">Type de pointage</label><select class="form-select" id="type" name="type"><option value="">Tous</option><option value="arrival" @selected(request('type') === 'arrival')>Arrivée</option><option value="departure" @selected(request('type') === 'departure')>Sortie</option></select></div>
+        <div class="col-12 col-sm-6 col-lg-3 d-flex gap-2"><button class="btn btn-primary flex-grow-1"><i class="bi bi-funnel me-1"></i>Filtrer</button><a class="btn btn-outline-secondary" href="{{ $employee && auth()->user()->isAdmin() ? route('employees.history', $employee) : route('attendance.history') }}">Effacer</a></div>
+    </div>
+</form>
+
 <div class="card">
     <div class="table-responsive">
         <table class="table table-hover mb-0">

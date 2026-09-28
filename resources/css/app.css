@@ -101,6 +101,9 @@ body { min-height: 100vh; margin: 0; background: var(--paper); color: var(--ink)
 .login-card .form-control { min-height: 3.15rem; padding-left: 2.85rem; background: #fbfcfe; }
 .input-icon { position: relative; }
 .input-icon > i { position: absolute; z-index: 2; top: 50%; left: 1rem; color: #91a0b8; transform: translateY(-50%); }
+.input-icon .form-control, .input-icon .form-select { padding-left: 2.85rem; }
+.input-icon .password-toggle { position: absolute; z-index: 3; top: 50%; right: .65rem; padding: .25rem; border: 0; background: transparent; color: #68758d; transform: translateY(-50%); }
+.input-icon .password-toggle ~ .form-control { padding-right: 2.6rem; }
 .remember-row { display: inline-flex; align-items: center; gap: .55rem; color: #5e6d87; font-size: .8rem; }
 .remember-row .form-check-input { float: none; margin: 0; }
 .login-submit { min-height: 3.15rem; }

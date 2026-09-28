@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -11,22 +12,25 @@ class LoginController extends Controller
 {
     public function showLoginForm()
     {
-        return view("auth.login");
+        return view("auth.login", [
+            'users' => User::query()->orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            "email" => ["required", "email"],
+            "user_id" => ["required", "integer", "exists:users,id"],
             "password" => ["required"],
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean("remember"))) {
-            AuditLog::log("login_failed", "Email : {$credentials["email"]}");
+        $user = User::find($credentials['user_id']);
+        if (! $user || ! Auth::attempt(['email' => $user->email, 'password' => $credentials['password']], $request->boolean("remember"))) {
+            AuditLog::log("login_failed", "Utilisateur : {$credentials["user_id"]}");
 
             return back()->withErrors([
-                "email" => "Identifiants incorrects.",
-            ])->onlyInput("email");
+                "user_id" => "Nom ou mot de passe incorrect.",
+            ])->onlyInput("user_id");
         }
 
         $request->session()->regenerate();
@@ -37,7 +41,7 @@ class LoginController extends Controller
             Auth::logout();
 
             return back()->withErrors([
-                "email" => "Votre compte est désactivé. Contactez un administrateur.",
+                "user_id" => "Votre compte est désactivé. Contactez un administrateur.",
             ]);
         }
 

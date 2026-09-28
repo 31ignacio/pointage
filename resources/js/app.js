@@ -4,6 +4,19 @@ import QRCode from 'qrcode';
 
 window.QRCode = QRCode;
 
+document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const input = button.parentElement.querySelector('[data-password-toggle-input]');
+        if (!input) return;
+        const isVisible = input.type === 'text';
+        input.type = isVisible ? 'password' : 'text';
+        button.setAttribute('aria-pressed', String(!isVisible));
+        button.setAttribute('aria-label', isVisible ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
+        const icon = button.querySelector('i');
+        if (icon) icon.className = isVisible ? 'bi bi-eye' : 'bi bi-eye-slash';
+    });
+});
+
 const navToggle = document.querySelector('[data-nav-toggle]');
 const mainNav = document.getElementById('mainNav');
 

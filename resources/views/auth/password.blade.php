@@ -41,19 +41,19 @@
                     @method('PUT')
                     <div class="mb-3">
                         <label class="form-label" for="current_password">Mot de passe actuel</label>
-                        <input id="current_password" type="password" name="current_password" class="form-control" required
-                            autocomplete="current-password">
+                        <div class="input-group"><input id="current_password" type="password" name="current_password" class="form-control" required
+                            autocomplete="current-password" data-password-toggle-input><button type="button" class="btn btn-outline-secondary" data-password-toggle aria-label="Afficher le mot de passe" aria-pressed="false"><i class="bi bi-eye"></i></button></div>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label" for="password">Nouveau mot de passe</label>
-                            <input id="password" type="password" name="password" class="form-control" required
-                                autocomplete="new-password">
+                            <div class="input-group"><input id="password" type="password" name="password" class="form-control" required
+                                autocomplete="new-password" data-password-toggle-input><button type="button" class="btn btn-outline-secondary" data-password-toggle aria-label="Afficher le mot de passe" aria-pressed="false"><i class="bi bi-eye"></i></button></div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="password_confirmation">Confirmer le nouveau mot de passe</label>
-                            <input id="password_confirmation" type="password" name="password_confirmation"
-                                class="form-control" required autocomplete="new-password">
+                            <div class="input-group"><input id="password_confirmation" type="password" name="password_confirmation"
+                                class="form-control" required autocomplete="new-password" data-password-toggle-input><button type="button" class="btn btn-outline-secondary" data-password-toggle aria-label="Afficher le mot de passe" aria-pressed="false"><i class="bi bi-eye"></i></button></div>
                         </div>
                     </div>
                     <div class="d-flex justify-content-end mt-4">

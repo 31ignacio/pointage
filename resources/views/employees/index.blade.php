@@ -72,39 +72,13 @@
                                     data-bs-target="#editModal{{ $employee->id }}" title="Modifier">
                                     <i class="bi bi-pencil-square me-1"></i>
                                 </button>
-                                <form action="{{ route('employees.destroy', $employee) }}" method="POST" class="d-inline"
-                                    onsubmit="return confirm('Supprimer cet employé ?')">
-                                    @csrf @method('DELETE')
-                                    <button class="btn btn-outline-danger" title="Supprimer">
-                                        <i class="bi bi-trash3 me-1"></i>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
+                                    data-bs-target="#deleteModal" data-employee-name="{{ $employee->fullName() }}"
+                                    data-delete-url="{{ route('employees.destroy', $employee) }}" title="Supprimer">
+                                    <i class="bi bi-trash3 me-1"></i>
+                                </button>
                             </td>
                         </tr>
-
-                        <div class="modal fade" id="editModal{{ $employee->id }}" tabindex="-1">
-                            <div class="modal-dialog modal-dialog-centered modal-lg">
-                                <form method="POST" action="{{ route('employees.update', $employee) }}"
-                                    class="modal-content">
-                                    @csrf @method('PUT')
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Modifier {{ $employee->fullName() }}</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        @include('employees._fields', [
-                                            'employee' => $employee,
-                                            'departments' => $departments,
-                                            'sites' => $sites,
-                                            'editing' => true,
-                                        ])
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button class="btn btn-primary">Enregistrer</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
                     @empty
                         <tr>
                             <td colspan="7" class="text-center text-muted py-4">Aucun employé.</td>
@@ -117,13 +91,42 @@
 
     <div class="mt-3">{{ $employees->links() }}</div>
 
-    <div class="modal fade" id="createModal" tabindex="-1">
+    {{-- ===== Modals de modification (un par employé, mais en dehors du tableau) ===== --}}
+    @foreach ($employees as $employee)
+        <div class="modal fade" id="editModal{{ $employee->id }}" tabindex="-1"
+            aria-labelledby="editModalLabel{{ $employee->id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <form method="POST" action="{{ route('employees.update', $employee) }}" class="modal-content">
+                    @csrf @method('PUT')
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editModalLabel{{ $employee->id }}">Modifier {{ $employee->fullName() }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        @include('employees._fields', [
+                            'employee' => $employee,
+                            'departments' => $departments,
+                            'sites' => $sites,
+                            'editing' => true,
+                        ])
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endforeach
+
+    {{-- ===== Modal de création ===== --}}
+    <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <form method="POST" action="{{ route('employees.store') }}" class="modal-content">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title">Nouvel employé</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="createModalLabel">Nouvel employé</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     @include('employees._fields', [
@@ -134,9 +137,49 @@
                     ])
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
                     <button class="btn btn-primary"><i class="bi bi-person-plus me-1"></i> Créer</button>
                 </div>
             </form>
         </div>
     </div>
+
+    {{-- ===== Modal de suppression (unique, réutilisé pour chaque employé) ===== --}}
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Confirmer la suppression</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Êtes-vous sûr de vouloir supprimer <strong id="deleteEmployeeName"></strong> ?
+                        Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <form id="deleteForm" method="POST" action="">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash3 me-1"></i> Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Remplit le modal de suppression avec les infos de l'employé cliqué
+        var deleteModal = document.getElementById('deleteModal');
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var employeeName = button.getAttribute('data-employee-name');
+            var deleteUrl = button.getAttribute('data-delete-url');
+
+            document.getElementById('deleteEmployeeName').textContent = employeeName;
+            document.getElementById('deleteForm').setAttribute('action', deleteUrl);
+        });
+    </script>
 @endsection

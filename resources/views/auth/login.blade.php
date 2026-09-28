@@ -20,7 +20,7 @@
             <div class="login-brand"><span class="brand-mark"><i class="bi bi-qr-code-scan"></i></span> Pointage</div>
             <div class="showcase-copy">
                 <span class="eyebrow">Gestion des présences</span>
-                <h1>Une équipe présente.<br>Une journée bien lancée.</h1>
+                <h4>Une équipe présente.Une journée bien lancée.</h4>
                 <p>Retrouvez vos pointages et gérez les présences simplement, depuis le bureau ou votre téléphone.</p>
             </div>
             <div class="showcase-orbit orbit-one"></div>
@@ -42,16 +42,19 @@
                 <form method="POST" action="{{ route('login') }}">
                     @csrf
                     <div class="mb-3">
-                        <label class="form-label" for="email">Adresse e-mail</label>
-                        <div class="input-icon"><i class="bi bi-envelope"></i><input id="email" type="email"
-                                name="email" value="{{ old('email') }}" class="form-control"
-                                placeholder="nom@entreprise.com" autocomplete="username" required autofocus></div>
+                        <label class="form-label" for="user_id">Votre nom</label>
+                        <div class="input-icon"><i class="bi bi-person"></i><select id="user_id" name="user_id" class="form-select" autocomplete="username" required autofocus>
+                                <option value="">Sélectionnez votre nom</option>
+                                @foreach ($users as $user)
+                                    <option value="{{ $user->id }}" @selected(old('user_id') == $user->id)>{{ $user->name }}</option>
+                                @endforeach
+                            </select></div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="password">Mot de passe</label>
                         <div class="input-icon"><i class="bi bi-lock"></i><input id="password" type="password"
                                 name="password" class="form-control" placeholder="Votre mot de passe"
-                                autocomplete="current-password" required></div>
+                                autocomplete="current-password" data-password-toggle-input required><button type="button" class="password-toggle" data-password-toggle aria-label="Afficher le mot de passe" aria-pressed="false"><i class="bi bi-eye"></i></button></div>
                     </div>
                     <label class="form-check remember-row mb-4"><input type="checkbox" name="remember"
                             class="form-check-input" id="remember"><span class="form-check-label">Se souvenir de
