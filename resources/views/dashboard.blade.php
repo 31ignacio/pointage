@@ -19,10 +19,17 @@
     </div>
 
     <section class="card mb-4 early-report">
-        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <div><i class="bi bi-alarm me-2 text-primary"></i>Arrivées avant l'heure</div>
-            <span class="badge text-bg-light">{{ $earlyArrivals->total() }} résultat(s)</span>
+        <div class="card-header">
+            <button class="early-report-toggle" type="button" id="early-report-toggle" aria-expanded="false" aria-controls="early-report-content">
+                <span><i class="bi bi-alarm me-2 text-primary"></i>Arrivées avant l'heure</span>
+                <span class="early-report-meta">
+                    <span class="badge text-bg-light">{{ $earlyArrivals->total() }} résultat(s)</span>
+                    <i class="bi bi-chevron-down early-report-chevron early-report-chevron-down" aria-hidden="true"></i>
+                    <i class="bi bi-chevron-up early-report-chevron early-report-chevron-up" aria-hidden="true"></i>
+                </span>
+            </button>
         </div>
+        <div id="early-report-content" hidden>
         <div class="card-body">
             <p class="text-muted small mb-3">Recherchez les arrivées avant l'heure choisie, par période, service ou employé.</p>
             <form method="GET" action="{{ route('dashboard') }}" class="row g-3 align-items-end" id="early-arrivals-filter">
@@ -98,6 +105,7 @@
             </table>
         </div>
         @if($earlyArrivals->hasPages())<div class="card-body py-3">{{ $earlyArrivals->links() }}</div>@endif
+        </div>
     </section>
 
     <div class="card">
@@ -129,6 +137,9 @@
             const end = document.getElementById('end_date');
             const department = document.getElementById('department_id');
             const employee = document.getElementById('employee_id');
+            const earlyReportToggle = document.getElementById('early-report-toggle');
+            const earlyReportContent = document.getElementById('early-report-content');
+            const earlyReportStorageKey = 'dashboard-early-report-expanded';
             const updatePeriodFields = () => {
                 const custom = period.value === 'custom';
                 dateFields.forEach((field) => { field.hidden = !custom; });
@@ -147,6 +158,17 @@
             period.addEventListener('change', updatePeriodFields);
             start.addEventListener('change', updatePeriodFields);
             department.addEventListener('change', filterEmployees);
+            const setEarlyReportExpanded = (expanded) => {
+                earlyReportToggle.setAttribute('aria-expanded', String(expanded));
+                earlyReportContent.hidden = !expanded;
+                sessionStorage.setItem(earlyReportStorageKey, String(expanded));
+            };
+            const savedEarlyReportState = sessionStorage.getItem(earlyReportStorageKey);
+            if (savedEarlyReportState !== null) setEarlyReportExpanded(savedEarlyReportState === 'true');
+            earlyReportToggle.addEventListener('click', () => {
+                const expanded = earlyReportToggle.getAttribute('aria-expanded') === 'true';
+                setEarlyReportExpanded(!expanded);
+            });
             filterEmployees();
         })();
     </script>

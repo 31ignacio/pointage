@@ -54,6 +54,13 @@ body { min-height: 100vh; margin: 0; background: var(--paper); color: var(--ink)
 .page-kicker, .eyebrow { color: var(--brand); font-size: .7rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
 .card { overflow: hidden; border: 1px solid var(--line) !important; border-radius: 1.05rem !important; background: var(--panel); box-shadow: var(--shadow) !important; }
 .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--line); color: var(--ink); font-size: .9rem; font-weight: 800; }
+.early-report-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 .15rem 0 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.early-report-toggle:focus-visible { outline: 3px solid rgba(65,105,225,.28); outline-offset: 4px; border-radius: .25rem; }
+.early-report-meta { display: inline-flex; align-items: center; gap: .85rem; }
+.early-report-chevron { color: var(--brand); font-size: 1.15rem; font-weight: 900; transition: opacity .16s ease, transform .18s ease; }
+.early-report-chevron-up { display: none; }
+.early-report-toggle[aria-expanded="true"] .early-report-chevron-down { display: none; }
+.early-report-toggle[aria-expanded="true"] .early-report-chevron-up { display: inline-block; }
 .table { --bs-table-bg: transparent; margin-bottom: 0; color: var(--ink); vertical-align: middle; }
 .table thead th { padding: .9rem 1rem; border-bottom: 1px solid var(--line); color: #7887a0; font-size: .67rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
 .table tbody td { padding: .85rem 1rem; border-color: #edf0f5; font-size: .84rem; }
