@@ -57,9 +57,11 @@
         <select name="role" class="form-select" required>
             @php $currentRole = $employee->user->role ?? 'employe'; @endphp
             <option value="employe" @selected($currentRole === 'employe')>Employé</option>
-            <option value="responsable" @selected($currentRole === 'responsable')>Responsable</option>
-            <option value="rh_admin" @selected($currentRole === 'rh_admin')>RH / Admin</option>
-            <option value="super_admin" @selected($currentRole === 'super_admin')>Super Admin</option>
+            @if (auth()->user()->isSuperAdmin())
+                <option value="responsable" @selected($currentRole === 'responsable')>Responsable</option>
+                <option value="rh_admin" @selected($currentRole === 'rh_admin')>RH / Admin</option>
+                <option value="super_admin" @selected($currentRole === 'super_admin')>Super Admin</option>
+            @endif
         </select>
     </div>
     <div class="col-6 mb-2">

@@ -1,0 +1,181 @@
+/* Pages d'erreur — thème « badge de pointage »
+   Charger dans layouts/app.blade.php :
+   <link rel="stylesheet" href="{{ asset('css/errors.css') }}">          */
+
+.error-state {
+    --err-accent: #e0445a;
+    --err-ink: #151d2e;
+    --err-ink-2: #0d1322;
+
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: clamp(2rem, 6vw, 5rem);
+    max-width: 62rem;
+    min-height: min(34rem, 80vh);
+    padding: clamp(1.5rem, 5vw, 3rem) 1rem;
+}
+
+/* ---------- Texte ---------- */
+.error-copy { order: 2; text-align: left; }
+
+.error-copy h1 {
+    margin: 0 0 .75rem;
+    font-size: clamp(2rem, 4.6vw, 3.1rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -.025em;
+}
+
+.error-message {
+    max-width: 30rem;
+    margin: 0 0 1.25rem;
+    font-size: 1.075rem;
+    line-height: 1.6;
+    color: var(--bs-secondary-color, #5b6472);
+}
+
+.error-reference {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    margin: 0 0 1.75rem;
+    padding: .3rem .75rem;
+    border-radius: 999px;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--err-accent);
+    background: color-mix(in srgb, var(--err-accent) 11%, transparent);
+}
+
+.error-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.error-actions .btn { padding: .65rem 1.25rem; border-radius: .75rem; font-weight: 600; }
+
+/* ---------- Visuel : badge accroché ---------- */
+.error-visual {
+    order: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 1.5rem;
+}
+
+.badge-hang {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform-origin: 50% 0;
+    animation: badge-swing 2.8s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+.badge-strap {
+    width: 16px;
+    height: 76px;
+    border-radius: 4px 4px 0 0;
+    background: linear-gradient(90deg, var(--err-accent), color-mix(in srgb, var(--err-accent) 70%, #000));
+}
+
+.badge-card {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 15rem;
+    margin-top: -10px;
+    padding: 1.6rem 1.5rem 1.7rem;
+    overflow: hidden;
+    border-radius: 1.5rem;
+    color: #fff;
+    background: linear-gradient(160deg, var(--err-ink), var(--err-ink-2));
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .08) inset, 0 28px 50px -22px rgba(13, 19, 34, .55);
+}
+
+.badge-slot {
+    width: 3rem;
+    height: .5rem;
+    margin-bottom: 1.4rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .16);
+}
+
+.badge-icon {
+    display: grid;
+    place-items: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    font-size: 1.75rem;
+    color: #fff;
+    background: var(--err-accent);
+}
+
+.badge-code {
+    margin-top: 1.1rem;
+    font-size: 4.25rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.05em;
+    font-variant-numeric: tabular-nums;
+}
+
+.badge-lines { display: grid; gap: .5rem; width: 100%; margin-top: 1.5rem; }
+.badge-lines i { display: block; height: .5rem; border-radius: 999px; background: rgba(255, 255, 255, .12); }
+.badge-lines i:last-child { width: 62%; }
+
+/* Faisceau du lecteur : le seul mouvement permanent de la page */
+.badge-beam {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 3px;
+    background: var(--err-accent);
+    box-shadow: 0 0 18px 6px color-mix(in srgb, var(--err-accent) 55%, transparent);
+    opacity: 0;
+    animation: badge-scan 4.2s ease-in-out 1.2s infinite;
+}
+
+.badge-shadow {
+    width: 9rem;
+    height: 1rem;
+    margin-top: 1.5rem;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(13, 19, 34, .28), transparent);
+}
+
+@keyframes badge-swing {
+    0%   { transform: rotate(10deg); }
+    20%  { transform: rotate(-7deg); }
+    40%  { transform: rotate(4.5deg); }
+    60%  { transform: rotate(-2.5deg); }
+    80%  { transform: rotate(1deg); }
+    100% { transform: rotate(0); }
+}
+
+@keyframes badge-scan {
+    0%   { top: 0; opacity: 0; }
+    8%   { opacity: 1; }
+    45%  { top: calc(100% - 3px); opacity: 1; }
+    55%  { top: calc(100% - 3px); opacity: 0; }
+    100% { top: calc(100% - 3px); opacity: 0; }
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 767.98px) {
+    .error-state { grid-template-columns: 1fr; text-align: center; gap: 1.5rem; }
+    .error-copy { order: 2; text-align: center; }
+    .error-message { margin-inline: auto; }
+    .error-actions { justify-content: center; }
+    .badge-card { width: 12.5rem; }
+    .badge-code { font-size: 3.5rem; }
+    .badge-strap { height: 52px; }
+}
+
+/* ---------- Accessibilité ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .badge-hang { animation: none; }
+    .badge-beam { animation: none; opacity: 0; }
+}

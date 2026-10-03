@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 */
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login']);
+    Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:5,1');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])
@@ -37,7 +37,7 @@ Route::redirect('/', '/pointage');
 */
 Route::middleware('auth')->group(function () {
     Route::get('/pointage', [AttendanceController::class, 'scan'])->name('attendance.scan');
-    Route::post('/pointage/check', [AttendanceController::class, 'check'])->name('attendance.check');
+    Route::post('/pointage/check', [AttendanceController::class, 'check'])->middleware('throttle:10,1')->name('attendance.check');
     Route::get('/historique', [AttendanceController::class, 'history'])->name('attendance.history');
 });
 

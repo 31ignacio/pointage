@@ -21,12 +21,12 @@ class LoginController extends Controller
     {
         $credentials = $request->validate([
             "user_id" => ["required", "integer", "exists:users,id"],
-            "password" => ["required"],
+            "password" => ["required", "string", "max:255"],
         ]);
 
         $user = User::find($credentials['user_id']);
         if (! $user || ! Auth::attempt(['email' => $user->email, 'password' => $credentials['password']], $request->boolean("remember"))) {
-            AuditLog::log("login_failed", "Utilisateur : {$credentials["user_id"]}");
+            AuditLog::log("login_failed");
 
             return back()->withErrors([
                 "user_id" => "Nom ou mot de passe incorrect.",
@@ -39,9 +39,11 @@ class LoginController extends Controller
 
         if ($user->employee && $user->employee->status !== "active") {
             Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
             return back()->withErrors([
-                "user_id" => "Votre compte est désactivé. Contactez un administrateur.",
+                "user_id" => "Nom ou mot de passe incorrect.",
             ]);
         }
 

@@ -10,14 +10,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
     public function index(Request $request)
     {
+        $filters = $request->validate([
+            "q" => ["nullable", "string", "max:100"],
+            "department_id" => ["nullable", "integer", "exists:departments,id"],
+        ]);
         $query = Employee::with(["department", "site", "user"]);
 
-        if ($search = $request->get("q")) {
+        if ($search = $filters["q"] ?? null) {
             $query->where(function ($q) use ($search) {
                 $q->where("first_name", "like", "%{$search}%")
                     ->orWhere("last_name", "like", "%{$search}%")
@@ -25,7 +30,7 @@ class EmployeeController extends Controller
             });
         }
 
-        if ($departmentId = $request->get("department_id")) {
+        if ($departmentId = $filters["department_id"] ?? null) {
             $query->where("department_id", $departmentId);
         }
 
@@ -47,7 +52,9 @@ class EmployeeController extends Controller
             "department_id" => ["nullable", "exists:departments,id"],
             "site_id" => ["nullable", "exists:sites,id"],
             "email" => ["required", "email", "unique:users,email"],
-            "role" => ["required", "in:employe,responsable,rh_admin,super_admin"],
+            "role" => ["required", Rule::in($request->user()->isSuperAdmin()
+                ? ["employe", "responsable", "rh_admin", "super_admin"]
+                : ["employe"])],
             "status" => ["required", "in:active,inactive"],
         ]);
 
@@ -83,6 +90,8 @@ class EmployeeController extends Controller
 
     public function update(Request $request, Employee $employee)
     {
+        abort_if($employee->user && ! $request->user()->isSuperAdmin() && $employee->user->role !== "employe", 403);
+
         $data = $request->validate([
             "matricule" => ["required", "string", "max:50", "unique:employees,matricule," . $employee->id],
             "first_name" => ["required", "string", "max:255"],
@@ -91,8 +100,17 @@ class EmployeeController extends Controller
             "department_id" => ["nullable", "exists:departments,id"],
             "site_id" => ["nullable", "exists:sites,id"],
             "status" => ["required", "in:active,inactive"],
-            "role" => ["required", "in:employe,responsable,rh_admin,super_admin"],
+            "role" => ["required", Rule::in($request->user()->isSuperAdmin()
+                ? ["employe", "responsable", "rh_admin", "super_admin"]
+                : ["employe"])],
         ]);
+
+        if ($employee->user?->isSuperAdmin() && ($data["role"] !== "super_admin" || $data["status"] !== "active")) {
+            $activeSuperAdmins = User::where("role", "super_admin")
+                ->whereHas("employee", fn ($query) => $query->where("status", "active"))
+                ->count();
+            abort_if($activeSuperAdmins <= 1, 403);
+        }
 
         $employee->update($data);
 
@@ -106,8 +124,17 @@ class EmployeeController extends Controller
         return back()->with("status", "Employé mis à jour.");
     }
 
-    public function destroy(Employee $employee)
+    public function destroy(Request $request, Employee $employee)
     {
+        abort_if($employee->user_id === $request->user()->id, 403);
+        abort_if($employee->user && ! $request->user()->isSuperAdmin() && $employee->user->role !== "employe", 403);
+        if ($employee->user?->isSuperAdmin()) {
+            $activeSuperAdmins = User::where("role", "super_admin")
+                ->whereHas("employee", fn ($query) => $query->where("status", "active"))
+                ->count();
+            abort_if($activeSuperAdmins <= 1, 403);
+        }
+
         $userId = $employee->user_id;
         $employee->delete();
 
