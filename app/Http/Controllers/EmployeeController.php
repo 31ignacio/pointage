@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\EmployeePasskeyActivationCode;
+use App\Models\AuditLog;
 use App\Models\Site;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -20,7 +22,7 @@ class EmployeeController extends Controller
             "q" => ["nullable", "string", "max:100"],
             "department_id" => ["nullable", "integer", "exists:departments,id"],
         ]);
-        $query = Employee::with(["department", "site", "user"]);
+        $query = Employee::with(["department", "site", "user.passkeys"]);
 
         if ($search = $filters["q"] ?? null) {
             $query->where(function ($q) use ($search) {
@@ -122,6 +124,54 @@ class EmployeeController extends Controller
         }
 
         return back()->with("status", "Employé mis à jour.");
+    }
+
+    public function generatePasskeyActivationCode(Request $request, Employee $employee)
+    {
+        abort_unless($employee->user?->role === 'employe', 422, 'La passkey ne concerne que les comptes employé.');
+
+        $code = Str::upper(Str::random(16));
+
+        DB::transaction(function () use ($request, $employee, $code) {
+            $user = User::whereKey($employee->user_id)->lockForUpdate()->firstOrFail();
+            $passkeyCount = $user->passkeys()->count();
+            if ($passkeyCount > 0) {
+                $user->passkeys()->delete();
+                AuditLog::log('passkey_revoquee_admin', "nombre={$passkeyCount}; réinitialisation depuis la fiche employé", $employee->id);
+            }
+
+            EmployeePasskeyActivationCode::where('employee_id', $employee->id)
+                ->whereNull('used_at')->whereNull('revoked_at')
+                ->update(['revoked_at' => now(), 'updated_at' => now()]);
+
+            $activationCode = EmployeePasskeyActivationCode::create([
+                'employee_id' => $employee->id,
+                'code_hash' => Hash::make($code),
+                'generated_by' => $request->user()->id,
+                'expires_at' => now()->addHours(24),
+            ]);
+
+            AuditLog::log('passkey_code_activation_genere', "code_id={$activationCode->id}; expire_at={$activationCode->expires_at->toIso8601String()}", $employee->id);
+        });
+
+        session()->flash('passkey_activation_code', $code);
+        session()->flash('passkey_activation_employee', $employee->fullName());
+
+        return back()->with('status', 'Code d’activation généré pour 24 heures. La passkey précédente a été révoquée.');
+    }
+
+    public function setDeviceFallback(Request $request, Employee $employee)
+    {
+        abort_unless($employee->user?->role === 'employe', 422, 'Le secours par appareil concerne uniquement les employés.');
+        $data = $request->validate(['enabled' => ['required', 'boolean']]);
+        $enabled = filter_var($data['enabled'], FILTER_VALIDATE_BOOLEAN);
+
+        if ((bool) $employee->device_fallback_enabled !== $enabled) {
+            $employee->update(['device_fallback_enabled' => $enabled]);
+            AuditLog::log('passkey_secours_appareil_modifie', $enabled ? 'Secours par appareil activé' : 'Secours par appareil désactivé', $employee->id);
+        }
+
+        return back()->with('status', $enabled ? 'Secours par appareil activé.' : 'Pointage par passkey obligatoire.');
     }
 
     public function destroy(Request $request, Employee $employee)

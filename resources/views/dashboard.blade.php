@@ -82,7 +82,6 @@
                     <button class="btn btn-outline-secondary" type="submit" formaction="{{ route('dashboard.export', ['format' => 'xlsx']) }}"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Exporter Excel</button>
                 </div>
             </form>
-            @if($errors->any())<div class="alert alert-danger mt-3 mb-0">{{ $errors->first() }}</div>@endif
             <div class="report-summary mt-3"><i class="bi bi-calendar3 me-1"></i>{{ $periodLabel }} <span class="mx-1">·</span> arrivées avant {{ $beforeTime }}</div>
         </div>
         <div class="table-responsive">

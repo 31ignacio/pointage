@@ -1,8 +1,32 @@
 import './bootstrap';
 import 'bootstrap';
+import { Modal, Toast } from 'bootstrap';
+window.bootstrap = Object.assign(window.bootstrap || {}, { Modal, Toast });
 import QRCode from 'qrcode';
+import { Passkeys } from '@laravel/passkeys';
 
 window.QRCode = QRCode;
+window.Passkeys = Passkeys;
+
+window.showToast = (message, type = 'info') => {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const variants = { success: ['Succès', 'bi-check-circle-fill', 'text-success'], error: ['Erreur', 'bi-exclamation-circle-fill', 'text-danger'], warning: ['Attention', 'bi-exclamation-triangle-fill', 'text-warning'], info: ['Information', 'bi-info-circle-fill', 'text-primary'] };
+    const [title, icon, color] = variants[type] || variants.info;
+    const toast = document.createElement('div');
+    toast.className = 'toast app-toast border-0';
+    toast.setAttribute('role', 'status');
+    toast.innerHTML = `<div class="d-flex"><div class="toast-body"><div class="fw-bold mb-1 ${color}"><i class="bi ${icon} me-2"></i>${title}</div><div class="toast-message"></div></div><button type="button" class="btn-close me-3 m-auto" data-bs-dismiss="toast" aria-label="Fermer"></button></div>`;
+    toast.querySelector('.toast-message').textContent = String(message);
+    container.appendChild(toast);
+    const instance = Toast.getOrCreateInstance(toast, { delay: 6000 });
+    toast.addEventListener('hidden.bs.toast', () => toast.remove(), { once: true });
+    instance.show();
+};
+
+document.querySelectorAll('[data-toast-message]').forEach((item) => {
+    window.showToast(item.dataset.toastMessage, item.dataset.toastType || 'info');
+});
 
 document.querySelectorAll('[data-password-toggle]').forEach((button) => {
     button.addEventListener('click', () => {

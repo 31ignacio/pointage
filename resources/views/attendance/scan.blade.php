@@ -53,7 +53,7 @@
             font-size: .9rem;
         }
 
-        #geo-status.alert {
+        #geo-status.geo-status {
             border-radius: 999px;
             font-weight: 600;
             font-size: .88rem;
@@ -119,7 +119,7 @@
                         <p class="text-muted small mb-4">Prêt à enregistrer votre présence ?</p>
 
                         @if ($error)
-                            <div class="alert alert-danger">{{ $error }}</div>
+                            <span class="d-none" data-toast-message="{{ $error }}" data-toast-type="error"></span>
                         @else
                             <div class="mb-3">
                                 <span class="site-chip">
@@ -140,9 +140,10 @@
                                 </div>
                             @endif
 
-                            <div id="geo-status" class="alert alert-secondary mb-2">
+                            <div id="geo-status" class="geo-status mb-2">
                                 <i class="bi bi-geo-alt"></i> Localisation en attente…
                             </div>
+                            <button type="button" id="geo-retry" class="btn btn-sm btn-outline-secondary mb-3" hidden>Réessayer la localisation</button>
 
                             <div id="geo-details" class="small text-muted mb-4 d-none" aria-live="polite"></div>
 
@@ -154,6 +155,9 @@
                             </button>
 
                             <div id="result" class="mt-3"></div>
+                            @if (auth()->user()->role === 'employe' && !($employee?->device_fallback_enabled ?? false) && !($passkeyEnabled ?? false))
+                                <p class="small text-muted mt-3 mb-0">Activez votre empreinte pour pointer. <a href="{{ route('passkeys.activate') }}">Saisir un code d’activation</a> (à demander à votre administrateur).</p>
+                            @endif
                         @endif
 
                         <a href="{{ route('attendance.history') }}" class="history-link d-inline-block mt-4">
@@ -164,19 +168,72 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="deviceChangeModal" tabindex="-1" aria-labelledby="deviceChangeTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="deviceChangeTitle"><i class="bi bi-phone me-2 text-warning"></i>Nouvel appareil détecté</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Vous essayez d’effectuer votre pointage depuis un appareil différent de votre appareil habituel.</p>
+                    <p class="mb-0">Voulez-vous demander l’autorisation d’utiliser cet appareil ? Aucun pointage ne sera enregistré avant la validation de l’administrateur.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="confirm-device-change">Oui, demander le changement</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
     <script>
-        (function() {
+        document.addEventListener('DOMContentLoaded', function() {
             const btn = document.getElementById('btn-check');
             const geoStatus = document.getElementById('geo-status');
             const geoDetails = document.getElementById('geo-details');
-            const result = document.getElementById('result');
+            const deviceModalElement = document.getElementById('deviceChangeModal');
+            const deviceModal = deviceModalElement ? window.bootstrap.Modal.getOrCreateInstance(deviceModalElement) : null;
+            const confirmDeviceChange = document.getElementById('confirm-device-change');
+            const geoRetry = document.getElementById('geo-retry');
+            const requiresPasskey = @json(auth()->user()->role === 'employe' && !($employee?->device_fallback_enabled ?? false));
 
             if (!btn) return;
 
+            const pointageButtonMarkup = btn.innerHTML;
             let currentPosition = null;
+            let pendingDeviceId = null;
+
+            function setRetryState() {
+                btn.disabled = !currentPosition;
+                btn.innerHTML = pointageButtonMarkup;
+            }
+
+            function submitDeviceChange() {
+                confirmDeviceChange.disabled = true;
+                fetch("{{ route('attendance.device.request') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ device_id: pendingDeviceId }),
+                }).then(async (res) => ({ ok: res.ok, data: await res.json() }))
+                    .then(({ ok, data }) => {
+                        if (!ok || !data.ok) throw new Error(data.message || 'La demande n’a pas pu être envoyée.');
+                        deviceModal.hide();
+                        showToast(data.message, 'success');
+                        setRetryState();
+                    }).catch((error) => {
+                        showToast(error.message || 'Erreur réseau. Réessayez.', 'error');
+                        setRetryState();
+                    }).finally(() => { confirmDeviceChange.disabled = false; });
+            }
+
+            confirmDeviceChange?.addEventListener('click', submitDeviceChange);
 
             function getOrCreateDeviceId() {
                 let id = localStorage.getItem('pointage_device_id');
@@ -187,35 +244,60 @@
                 return id;
             }
 
-            function requestLocation() {
+            function showLocationError(message) {
+                geoStatus.className = 'geo-status geo-error';
+                geoStatus.textContent = message;
+                geoRetry.hidden = false;
+                btn.disabled = true;
+                showToast(message, 'error');
+            }
+
+            async function requestLocation() {
+                geoRetry.hidden = true;
+                btn.disabled = true;
                 if (!('geolocation' in navigator)) {
-                    geoStatus.className = 'alert alert-danger';
-                    geoStatus.innerHTML = "Votre navigateur ne supporte pas la géolocalisation.";
+                    showLocationError('Ce navigateur ne prend pas en charge la localisation. Essayez un navigateur récent.');
                     return;
                 }
 
+                if (navigator.permissions?.query) {
+                    try {
+                        const permission = await navigator.permissions.query({ name: 'geolocation' });
+                        if (permission.state === 'denied') {
+                            showLocationError('Localisation refusée. Dans les réglages du navigateur, autorisez la localisation pour ce site, puis activez la localisation dans les réglages du téléphone.');
+                            return;
+                        }
+                    } catch (_) {
+                        // Certains navigateurs ne permettent pas de consulter cette permission.
+                    }
+                }
+
+                geoStatus.className = 'geo-status';
+                geoStatus.textContent = 'Demande de localisation en cours…';
+
                 navigator.geolocation.getCurrentPosition(function(pos) {
                     currentPosition = pos.coords;
-                    geoStatus.className = 'alert alert-success';
-                    geoStatus.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Position vérifiée';
+                    geoStatus.className = 'geo-status geo-success';
+                    geoStatus.textContent = 'Position vérifiée';
                     geoDetails.classList.remove('d-none');
-                    geoDetails.innerHTML = 'Latitude : <code>' + currentPosition.latitude.toFixed(6) +
-                        '</code> · Longitude : <code>' + currentPosition.longitude.toFixed(6) +
-                        '</code> · Précision estimée : <code>±' + Math.round(currentPosition.accuracy) +
-                        ' m</code><br><a href="https://www.google.com/maps?q=' +
-                        currentPosition.latitude + ',' + currentPosition.longitude +
-                        '" target="_blank" rel="noopener">Voir ma position sur Google Maps</a>';
+                    geoDetails.textContent = 'Latitude : ' + currentPosition.latitude.toFixed(6) +
+                        ' · Longitude : ' + currentPosition.longitude.toFixed(6) +
+                        ' · Précision estimée : ±' + Math.round(currentPosition.accuracy) + ' m';
+                    const mapLink = document.createElement('a');
+                    mapLink.href = 'https://www.google.com/maps?q=' + currentPosition.latitude + ',' + currentPosition.longitude;
+                    mapLink.target = '_blank';
+                    mapLink.rel = 'noopener';
+                    mapLink.textContent = 'Voir ma position sur Google Maps';
+                    geoDetails.append(document.createElement('br'), mapLink);
+                    geoRetry.hidden = true;
                     btn.disabled = false;
                 }, function(err) {
-                    geoStatus.className = 'alert alert-danger';
-                    const reasons = {
-                        1: 'autorisation refusée',
-                        2: 'position indisponible',
-                        3: 'délai dépassé',
-                    };
-                    geoStatus.innerHTML = "Localisation " + (reasons[err.code] || 'indisponible') +
-                        ". Autorisez la position dans votre navigateur et utilisez HTTPS (ou localhost).";
-                    btn.disabled = true;
+                    const message = err.code === 1
+                        ? 'Localisation refusée. Autorisez-la dans les réglages du navigateur pour ce site, puis dans les réglages de localisation du téléphone.'
+                        : err.code === 2
+                            ? 'Position indisponible. Vérifiez que la localisation du téléphone est activée, puis réessayez.'
+                            : 'La localisation met trop de temps à répondre. Vérifiez les réglages du téléphone et réessayez.';
+                    showLocationError(message);
                 }, {
                     enableHighAccuracy: true,
                     timeout: 15000,
@@ -223,18 +305,29 @@
                 });
             }
 
+            geoRetry.addEventListener('click', requestLocation);
+
             btn.addEventListener('click', function() {
                 if (!currentPosition) return;
 
                 btn.disabled = true;
                 btn.innerHTML = 'Enregistrement…';
 
-                fetch("{{ route('attendance.check') }}", {
+                const verifyPasskey = requiresPasskey
+                    ? window.Passkeys.verify({
+                        routes: {
+                            options: "{{ route('attendance.passkey.options') }}",
+                            submit: "{{ route('attendance.passkey.verify') }}",
+                        },
+                    })
+                    : Promise.resolve({ ok: true });
+
+                verifyPasskey.then(function() {
+                    return fetch("{{ route('attendance.check') }}", {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ||
-                                '{{ csrf_token() }}',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}',
                             'Accept': 'application/json',
                         },
                         body: JSON.stringify({
@@ -242,38 +335,43 @@
                             longitude: currentPosition.longitude,
                             device_id: getOrCreateDeviceId(),
                         }),
-                    })
-                    .then(function(res) {
-                        return res.json().then(function(data) {
-                            return {
-                                status: res.status,
-                                data: data
-                            };
-                        });
-                    })
-                    .then(function(r) {
-                        if (r.data.ok) {
-                            result.innerHTML = '<div class="alert alert-success">' + r.data.message +
-                                '</div>';
-                            setTimeout(function() {
-                                window.location.reload();
-                            }, 1200);
-                        } else {
-                            result.innerHTML = '<div class="alert alert-danger">' + r.data.message +
-                                '</div>';
-                            btn.disabled = false;
-                            btn.innerHTML = 'RÉESSAYER';
-                        }
-                    })
-                    .catch(function() {
-                        result.innerHTML =
-                        '<div class="alert alert-danger">Erreur réseau. Réessayez.</div>';
-                        btn.disabled = false;
-                        btn.innerHTML = 'RÉESSAYER';
-                    });
+                    }).then(async (res) => ({ status: res.status, data: await res.json() }));
+                }).then(function(r) {
+                    if (r.data.device_change_required) {
+                        pendingDeviceId = getOrCreateDeviceId();
+                        if (r.data.device_change_rejected) showToast('Votre demande précédente a été refusée. Vous pouvez soumettre une nouvelle demande si nécessaire.', 'error');
+                        deviceModal.show();
+                        setRetryState();
+                    } else if (r.data.ok) {
+                        showToast(r.data.message, 'success');
+                        setTimeout(function() { window.location.reload(); }, 1200);
+                    } else {
+                        showToast(r.data.message || 'Le pointage n’a pas pu être enregistré.', 'error');
+                        setRetryState();
+                    }
+                }).catch(function(error) {
+                    const message = error?.name === 'UserCancelledError'
+                        ? 'Empreinte refusée ou annulée. Réessayez pour pointer.'
+                        : error?.name === 'NotSupportedError'
+                            ? 'Cet appareil ou ce navigateur ne prend pas en charge les passkeys.'
+                            : (error?.message || 'Vérification de l’empreinte impossible. Réessayez.');
+                    if (requiresPasskey) {
+                        fetch("{{ route('attendance.passkey.failure') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({ reason: error?.name === 'UserCancelledError' ? 'annulee' : error?.name === 'NotSupportedError' ? 'non_supportee' : 'echec' }),
+                        }).catch(() => {});
+                    }
+                    showToast(message, 'error');
+                    setRetryState();
+                });
             });
 
             requestLocation();
-        })();
+        });
     </script>
 @endpush

@@ -18,6 +18,15 @@
 </head>
 
 <body>
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+    <div class="d-none">
+        @if (session('status')) <span data-toast-message="{{ session('status') }}" data-toast-type="success"></span> @endif
+        @if (session('error')) <span data-toast-message="{{ session('error') }}" data-toast-type="error"></span> @endif
+        @if (session('warning')) <span data-toast-message="{{ session('warning') }}" data-toast-type="warning"></span> @endif
+        @if (session('info')) <span data-toast-message="{{ session('info') }}" data-toast-type="info"></span> @endif
+        @if ($errors->any()) <span data-toast-message="{{ $errors->first() }}" data-toast-type="error"></span> @endif
+        @if (session('temp_password')) <span data-toast-message="Compte créé pour {{ session('temp_password_email') }}. Mot de passe temporaire : {{ session('temp_password') }}" data-toast-type="warning"></span> @endif
+    </div>
     @auth
         <nav class="navbar navbar-expand-xl navbar-dark app-navbar">
             <div class="container-fluid page-shell">
@@ -31,6 +40,9 @@
                                     class="bi bi-geo-alt me-1"></i>Pointer</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ route('attendance.history') }}"><i
                                     class="bi bi-clock-history me-1"></i>Mon historique</a></li>
+                        @if (auth()->user()->role === 'employe')
+                            <li class="nav-item"><a class="nav-link" href="{{ route('passkeys.activate') }}"><i class="bi bi-fingerprint me-1"></i>Activer mon empreinte</a></li>
+                        @endif
                         @if (auth()->user()->isAdmin())
                             <li class="nav-item nav-group">
                                 <button class="nav-link nav-group-toggle" type="button" data-submenu-toggle
@@ -43,6 +55,7 @@
                                     <a href="{{ route('employees.index') }}"><i
                                             class="bi bi-people"></i><span><strong>Employés</strong><small>Comptes et
                                                 historique</small></span></a>
+                                    <a href="{{ route('devices.requests.index') }}"><i class="bi bi-phone"></i><span><strong>Demandes d’appareils</strong><small>Changements à valider</small></span></a>
                                     <a href="{{ route('sites.index') }}"><i
                                             class="bi bi-building"></i><span><strong>Sites</strong><small>Lieux de
                                                 travail</small></span></a>
@@ -68,16 +81,6 @@
     @endauth
 
     <main class="container-fluid page-shell page-content">
-        @if (session('status'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">{{ session('status') }}<button
-                    type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button></div>
-        @endif
-        @if (session('temp_password'))
-            <div class="alert alert-warning"><strong>Compte créé pour
-                    {{ session('temp_password_email') }}</strong><br>Mot de passe temporaire :
-                <code>{{ session('temp_password') }}</code><br><small>À communiquer une seule fois à l’employé, puis à
-                    changer.</small></div>
-        @endif
         @yield('content')
     </main>
     @stack('scripts')

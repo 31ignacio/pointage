@@ -15,6 +15,8 @@
 </head>
 
 <body class="login-page">
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+    @if ($errors->any()) <span class="d-none" data-toast-message="{{ $errors->first() }}" data-toast-type="error"></span> @endif
     <main class="login-layout">
         <section class="login-showcase" aria-label="Pointage du personnel">
             <div class="login-brand"><span class="brand-mark"><i class="bi bi-qr-code-scan"></i></span> Pointage</div>
@@ -35,10 +37,6 @@
                 <span class="eyebrow">Bienvenue</span>
                 <h2>Connectez-vous</h2>
                 <p class="login-intro">Saisissez vos identifiants pour accéder à votre espace.</p>
-                @if ($errors->any())
-                    <div class="alert alert-danger" role="alert"><i
-                            class="bi bi-exclamation-circle me-2"></i>{{ $errors->first() }}</div>
-                @endif
                 <form method="POST" action="{{ route('login') }}">
                     @csrf
                     <div class="mb-3">

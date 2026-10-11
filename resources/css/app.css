@@ -81,10 +81,16 @@ body { min-height: 100vh; margin: 0; background: var(--paper); color: var(--ink)
 .modal-title { font-size: 1rem; font-weight: 800; }
 .modal-body { padding: 1.3rem; }
 .modal-footer { padding: .9rem 1.3rem; border-top-color: var(--line); }
+.toast-container { z-index: 1090; }
+.app-toast { min-width: min(340px, calc(100vw - 2rem)); border-radius: .9rem; background: #fff; box-shadow: 0 16px 42px rgba(17,31,61,.18); }
+.app-toast .toast-body { padding: 1rem 1.1rem; }
+.app-toast .toast-message { color: #34415b; line-height: 1.45; }
+.geo-status { border-radius: 999px; padding: .6rem 1rem; font-size: .88rem; font-weight: 600; background: #eef2f7; color: #526079; }
+.geo-status.geo-success { background: #e8f7ef; color: #167448; }
+.geo-status.geo-error { background: #fff0ef; color: #b42318; }
 .stat-card { position: relative; min-height: 135px; overflow: hidden; padding: 1.2rem; }
 .stat-card::after { position: absolute; top: -32px; right: -28px; width: 105px; height: 105px; border-radius: 50%; background: var(--accent); content: ''; opacity: .2; }
 .stat-value { font-size: clamp(1.65rem, 3vw, 2.15rem); font-weight: 800; letter-spacing: -.06em; }
-.alert { border: 0; border-radius: .85rem; box-shadow: 0 5px 18px rgba(25,43,80,.04); font-size: .88rem; }
 .pagination { flex-wrap: wrap; gap: .25rem; }
 .page-link { border: 0; border-radius: .55rem !important; color: var(--brand); }
 .error-state { display: grid; width: min(100%, 920px); min-height: 390px; grid-template-columns: minmax(250px, .82fr) minmax(0, 1.18fr); overflow: hidden; margin-top: clamp(1.5rem, 7vh, 5rem); border: 1px solid rgba(220,228,240,.95); border-radius: 1.5rem; background: #fff; box-shadow: 0 24px 70px rgba(28,45,78,.12); animation: error-enter .55s cubic-bezier(.2,.75,.25,1) both; }

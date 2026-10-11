@@ -18,6 +18,7 @@ class Employee extends Model
         "department_id",
         "site_id",
         "status",
+        "device_fallback_enabled",
     ];
 
     public function user()
@@ -38,6 +39,21 @@ class Employee extends Model
     public function attendanceRecords()
     {
         return $this->hasMany(AttendanceRecord::class);
+    }
+
+    public function device()
+    {
+        return $this->hasOne(Device::class);
+    }
+
+    public function deviceChangeRequests()
+    {
+        return $this->hasMany(DeviceChangeRequest::class);
+    }
+
+    protected function casts(): array
+    {
+        return ['device_fallback_enabled' => 'boolean'];
     }
 
     public function fullName(): string
