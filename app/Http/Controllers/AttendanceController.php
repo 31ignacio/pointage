@@ -343,6 +343,6 @@ class AttendanceController extends Controller
         $qrCode = new QrCode(data: $scanUrl, size: 260, margin: 2);
         $qrImage = (new SvgWriter())->write($qrCode)->getDataUri();
 
-        return view('attendance.qrcode', compact('scanUrl', 'qrImage'));
+        return view('attendance.qrcode', compact('qrImage'));
     }
 }
