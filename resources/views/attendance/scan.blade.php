@@ -278,7 +278,7 @@
                 navigator.geolocation.getCurrentPosition(function(pos) {
                     currentPosition = pos.coords;
                     geoStatus.className = 'geo-status geo-success';
-                    geoStatus.textContent = 'Position vérifiée';
+                    geoStatus.textContent = 'Position détectée automatiquement';
                     geoDetails.classList.remove('d-none');
                     geoDetails.textContent = 'Latitude : ' + currentPosition.latitude.toFixed(6) +
                         ' · Longitude : ' + currentPosition.longitude.toFixed(6) +

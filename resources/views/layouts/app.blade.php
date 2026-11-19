@@ -52,6 +52,7 @@
                                 <div class="nav-submenu admin-submenu" id="adminMenu">
                                     <a href="{{ route('dashboard') }}"><i class="bi bi-grid-1x2"></i><span><strong>Tableau
                                                 de bord</strong><small>Vue d’ensemble des présences</small></span></a>
+                                    <a href="{{ route('monthly-attendance.index') }}"><i class="bi bi-calendar3"></i><span><strong>Suivi mensuel des retards et heures supplémentaires</strong><small>Présences et cumuls mensuels</small></span></a>
                                     <a href="{{ route('employees.index') }}"><i
                                             class="bi bi-people"></i><span><strong>Employés</strong><small>Comptes et
                                                 historique</small></span></a>

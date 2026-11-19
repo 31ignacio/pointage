@@ -10,6 +10,7 @@ use App\Http\Controllers\DeviceChangeRequestController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeePasskeyController;
 use App\Http\Controllers\SiteController;
+use App\Http\Controllers\MonthlyAttendanceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\RequireSecureWebAuthn;
 
@@ -63,6 +64,10 @@ Route::middleware('auth')->group(function () {
 */
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/suivi-mensuel', [MonthlyAttendanceController::class, 'index'])->name('monthly-attendance.index');
+    Route::put('/suivi-mensuel/horaires', [MonthlyAttendanceController::class, 'updateSchedule'])->name('monthly-attendance.schedule.update');
+    Route::get('/suivi-mensuel/export/{format}', [MonthlyAttendanceController::class, 'export'])
+        ->where('format', 'pdf|xlsx')->name('monthly-attendance.export');
     Route::get('/dashboard/export/{format}', [DashboardController::class, 'export'])
         ->where('format', 'pdf|xlsx')
         ->name('dashboard.export');
